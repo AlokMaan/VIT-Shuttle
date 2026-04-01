@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | VIT Shuttle — Campus Transit</title>
+    <meta name="description" content="Sign in to VIT Shuttle. Access live bus tracking, schedules, and admin portal for VIT Vellore campus.">
+    <script>
+        (function() {
+            var t = localStorage.getItem('vit-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="pages/signin.css">
+</head>
+<body>
+
+    <!-- NAVIGATION -->
+    <nav class="nav" id="main-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <div class="brand-icon-wrap">
+                    <span class="material-symbols-outlined">directions_bus</span>
+                </div>
+                <div class="brand-text-group">
+                    <span class="brand-text">VIT Shuttle</span>
+                    <span class="brand-sub">Campus Transit · Vellore</span>
+                </div>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="index.html"    class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="map.html"       class="nav-link">Live Map</a>
+                <a href="schedules.html" class="nav-link">Schedules</a>
+                <a href="alerts.html"    class="nav-link">Alerts</a>
+            </div>
+            <div class="nav-actions">
+                <div class="ist-clock">
+                    <span class="clock-label">IST</span>
+                    <span class="clock-time" id="clock-time">--:--:--</span>
+                </div>
+                <a href="signin.html" class="nav-signin active">
+                    <span class="material-symbols-outlined">account_circle</span> Sign In
+                </a>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Toggle dark/light mode" aria-label="Toggle theme">
+                    <span class="material-symbols-outlined icon-sun">light_mode</span>
+                    <span class="material-symbols-outlined icon-moon">dark_mode</span>
+                </button>
+                <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SIGN IN PAGE -->
+    <div class="page-wrapper">
+        <div class="signin-page">
+            <div class="signin-page-inner">
+
+                <!-- Left — Branding Panel -->
+                <div class="signin-brand-panel">
+                    <div class="brand-panel-content">
+                        <div class="brand-panel-icon">
+                            <span class="material-symbols-outlined">directions_bus</span>
+                        </div>
+                        <h1 class="brand-panel-title">VIT Shuttle</h1>
+                        <p class="brand-panel-sub">Campus Transit System</p>
+                        <div class="brand-panel-divider"></div>
+                        <p class="brand-panel-desc">
+                            Real-time campus bus tracking for VIT Vellore.
+                            Track 12 buses across 4 routes and 14 stops.
+                        </p>
+                        <div class="brand-panel-stats">
+                            <div class="bp-stat">
+                                <span class="material-symbols-outlined">directions_bus</span>
+                                <span>12 Buses</span>
+                            </div>
+                            <div class="bp-stat">
+                                <span class="material-symbols-outlined">route</span>
+                                <span>4 Routes</span>
+                            </div>
+                            <div class="bp-stat">
+                                <span class="material-symbols-outlined">location_on</span>
+                                <span>14 Stops</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right — Sign In Form -->
+                <div class="signin-form-panel">
+                    <div class="signin-form-content">
+
+                        <!-- Tabs -->
+                        <div class="auth-tabs" id="auth-tabs">
+                            <button class="auth-tab active" data-tab="student">
+                                <span class="material-symbols-outlined">school</span>
+                                Student
+                            </button>
+                            <button class="auth-tab" data-tab="admin">
+                                <span class="material-symbols-outlined">admin_panel_settings</span>
+                                Admin
+                            </button>
+                        </div>
+
+                        <!-- Title -->
+                        <h2 class="auth-title" id="auth-title">Student Sign In</h2>
+                        <p class="auth-desc" id="auth-desc">Sign in with your VIT credentials to access bus tracking and schedules.</p>
+
+                        <!-- Form -->
+                        <form id="signin-form" autocomplete="off">
+                            <div class="auth-field">
+                                <label for="auth-email">Email Address</label>
+                                <div class="auth-input-wrap">
+                                    <span class="material-symbols-outlined auth-input-icon">mail</span>
+                                    <input type="email" id="auth-email" placeholder="yourname@vitstudent.ac.in" autocomplete="email" required>
+                                </div>
+                            </div>
+
+                            <div class="auth-field">
+                                <label for="auth-password">Password</label>
+                                <div class="auth-input-wrap">
+                                    <span class="material-symbols-outlined auth-input-icon">lock</span>
+                                    <input type="password" id="auth-password" placeholder="Enter your password" autocomplete="current-password" required>
+                                    <button type="button" class="password-toggle" id="password-toggle" title="Show password">
+                                        <span class="material-symbols-outlined">visibility</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="auth-options">
+                                <label class="auth-checkbox">
+                                    <input type="checkbox" checked>
+                                    <span>Remember me</span>
+                                </label>
+                                <a href="#" class="auth-forgot">Forgot password?</a>
+                            </div>
+
+                            <button type="submit" class="auth-submit" id="auth-submit">
+                                <span class="material-symbols-outlined">login</span>
+                                Sign In
+                            </button>
+
+                            <!-- Error message -->
+                            <div class="auth-error" id="auth-error" style="display:none;">
+                                <span class="material-symbols-outlined">error</span>
+                                <span id="auth-error-text">Invalid email or password.</span>
+                            </div>
+                        </form>
+
+                        <!-- Divider -->
+                        <div class="auth-divider"><span>or continue with</span></div>
+
+                        <!-- Google -->
+                        <button class="auth-google" id="auth-google">
+                            <svg width="18" height="18" viewBox="0 0 18 18">
+                                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                                <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/>
+                                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58z"/>
+                            </svg>
+                            Continue with Google
+                        </button>
+
+                        <p class="auth-footer-text">
+                            Don't have an account? <a href="#">Contact VIT Admin Office</a>
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+    (function() {
+        const tabs = document.querySelectorAll('.auth-tab');
+        const title = document.getElementById('auth-title');
+        const desc = document.getElementById('auth-desc');
+        const emailInput = document.getElementById('auth-email');
+        const form = document.getElementById('signin-form');
+        const errorBox = document.getElementById('auth-error');
+        const errorText = document.getElementById('auth-error-text');
+        const submitBtn = document.getElementById('auth-submit');
+        const pwToggle = document.getElementById('password-toggle');
+        const pwInput = document.getElementById('auth-password');
+
+        let currentTab = 'student';
+
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentTab = tab.dataset.tab;
+                errorBox.style.display = 'none';
+
+                if (currentTab === 'admin') {
+                    title.textContent = 'Admin Sign In';
+                    desc.textContent = 'Administrative access restricted to @vit.ac.in institutional accounts only.';
+                    emailInput.placeholder = 'admin@vit.ac.in';
+                } else {
+                    title.textContent = 'Student Sign In';
+                    desc.textContent = 'Sign in with your VIT credentials to access bus tracking and schedules.';
+                    emailInput.placeholder = 'yourname@vitstudent.ac.in';
+                }
+            });
+        });
+
+        // Password toggle
+        pwToggle.addEventListener('click', () => {
+            const isPassword = pwInput.type === 'password';
+            pwInput.type = isPassword ? 'text' : 'password';
+            pwToggle.querySelector('.material-symbols-outlined').textContent = isPassword ? 'visibility_off' : 'visibility';
+        });
+
+        // Form submit
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+            const password = pwInput.value.trim();
+
+            if (!email || !password) {
+                errorBox.style.display = 'flex';
+                errorText.textContent = 'Please fill in all fields.';
+                return;
+            }
+
+            // Validate email domain
+            if (currentTab === 'admin' && !email.endsWith('@vit.ac.in')) {
+                errorBox.style.display = 'flex';
+                errorText.textContent = 'Admin access requires a @vit.ac.in email address.';
+                return;
+            }
+
+            errorBox.style.display = 'none';
+
+            // Simulate sign-in
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="material-symbols-outlined spinner">progress_activity</span> Signing in...';
+
+            setTimeout(() => {
+                // Store auth state
+                localStorage.setItem('vit-auth', JSON.stringify({
+                    email: email,
+                    role: currentTab,
+                    timestamp: Date.now()
+                }));
+
+                if (currentTab === 'admin') {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }, 1500);
+        });
+    })();
+    </script>
+</body>
+</html>
