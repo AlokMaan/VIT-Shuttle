@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts | VIT Shuttle — Live Campus Notifications</title>
+    <meta name="description" content="Live alerts and service notifications for VIT Vellore campus shuttle.">
+    <script>
+        (function() {
+            var t = localStorage.getItem('vit-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: 2.25rem 0; }
+        .page-hero-inner { max-width: 1380px; margin: 0 auto; padding: 0 1.5rem; }
+        .page-hero h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; color: var(--text); letter-spacing: -0.03em; margin: 0.4rem 0 0.5rem; }
+        .page-hero p  { font-size: 0.9rem; color: var(--text-2); }
+
+        .alerts-layout { display: grid; grid-template-columns: 1fr 300px; gap: 1.5rem; align-items: start; }
+
+        .filter-bar { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+        .filter-chip {
+            padding: 0.38rem 1rem; border-radius: var(--radius-full);
+            font-size: 0.78rem; font-weight: 600; cursor: pointer;
+            background: var(--surface-2); border: 1px solid var(--border);
+            color: var(--text-3); transition: var(--transition);
+        }
+        .filter-chip:hover  { border-color: var(--primary-light); color: var(--primary); background: var(--primary-bg); }
+        .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        /* type-specific active states */
+        .filter-chip[data-filter="warning"].active  { background: var(--orange); border-color: var(--orange); }
+        .filter-chip[data-filter="success"].active  { background: var(--green);  border-color: var(--green); }
+        .filter-chip[data-filter="error"].active    { background: var(--red);    border-color: var(--red); }
+
+        .alerts-stack { display: flex; flex-direction: column; gap: 0.85rem; }
+        .alert-card {
+            display: flex; gap: 1rem; padding: 1.1rem 1.25rem;
+            border-radius: var(--radius-lg);
+            background: var(--surface); border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm); transition: var(--transition);
+        }
+        .alert-card:hover { box-shadow: var(--shadow); transform: translateX(3px); }
+        .alert-icon-wrap {
+            width: 44px; height: 44px; border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .alert-icon-wrap .material-symbols-outlined { font-size: 1.25rem; }
+        .alert-icon-wrap.warning { background: var(--orange-bg); color: var(--orange); }
+        .alert-icon-wrap.success { background: var(--green-bg);  color: var(--green); }
+        .alert-icon-wrap.info    { background: var(--primary-bg);color: var(--primary); }
+        .alert-icon-wrap.error   { background: var(--red-bg);    color: var(--red); }
+        .alert-content { flex: 1; min-width: 0; }
+        .alert-header  { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.35rem; }
+        .alert-title   { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+        .alert-time    { font-size: 0.7rem; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
+        .alert-text    { font-size: 0.83rem; color: var(--text-2); line-height: 1.62; margin-bottom: 0.55rem; }
+        .alert-tags    { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+        .alert-tag     { font-size: 0.64rem; font-weight: 600; padding: 0.12rem 0.48rem; border-radius: 4px; background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+
+        /* Sidebar */
+        .alerts-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+        .alerts-sidebar-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow);
+        }
+        .asb-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+        .asb-title .material-symbols-outlined { font-size: 1rem; color: var(--primary); }
+        .notify-btn {
+            width: 100%; display: flex; align-items: center; justify-content: center;
+            gap: 0.5rem; padding: 0.72rem; border-radius: var(--radius-sm);
+            background: var(--primary); color: #fff; font-weight: 700; font-size: 0.88rem;
+            cursor: pointer; border: none; transition: var(--transition); margin-top: 0.5rem;
+        }
+        .notify-btn:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow); }
+
+        .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .stat-row:last-child { border-bottom: none; }
+        .stat-row-label { color: var(--text-3); }
+        .stat-row-val   { font-weight: 700; color: var(--text); }
+        .stat-row-val.green  { color: var(--green); }
+        .stat-row-val.orange { color: var(--orange); }
+        .stat-row-val.red    { color: var(--red); }
+
+        @media (max-width: 900px) { .alerts-layout { grid-template-columns: 1fr; } .alerts-sidebar { display: grid; grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 580px) { .alerts-sidebar { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="nav" id="main-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <div class="brand-icon-wrap"><span class="material-symbols-outlined">directions_bus</span></div>
+                <div class="brand-text-group"><span class="brand-text">VIT Shuttle</span><span class="brand-sub">Campus Transit · Vellore</span></div>
+                <span class="brand-badge">LIVE</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="index.html"    class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="map.html"       class="nav-link">Live Map</a>
+                <a href="schedules.html" class="nav-link">Schedules</a>
+                <a href="alerts.html"    class="nav-link active">Alerts</a>
+            </div>
+            <div class="nav-actions">
+                <div class="ist-clock"><span class="clock-label">IST</span><span class="clock-time" id="clock-time">--:--:--</span></div>
+                <button class="nav-signin" id="nav-signin-btn"><span class="material-symbols-outlined">account_circle</span> Sign In</button>
+                <a href="map.html" class="nav-cta"><span class="material-symbols-outlined">my_location</span> Track Live</a>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Toggle dark / light mode">
+                    <span class="material-symbols-outlined icon-sun">light_mode</span>
+                    <span class="material-symbols-outlined icon-moon">dark_mode</span>
+                </button>
+                <button class="nav-hamburger" id="nav-hamburger"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </nav>
+
+    <div style="padding-top:60px">
+        <div class="page-hero">
+            <div class="page-hero-inner">
+                <div class="section-tag"><span class="material-symbols-outlined">notifications_active</span> Live Alerts</div>
+                <h1>Campus <span class="gradient-text">Alerts & Updates</span></h1>
+                <p>Real-time service changes and campus notifications for VIT Vellore shuttle</p>
+            </div>
+        </div>
+
+        <div class="section-content" style="padding-top:2rem;padding-bottom:4rem">
+
+            <div class="filter-bar">
+                <button class="filter-chip active" data-filter="all">All Alerts</button>
+                <button class="filter-chip" data-filter="warning">Delays</button>
+                <button class="filter-chip" data-filter="success">Fleet News</button>
+                <button class="filter-chip" data-filter="info">Updates</button>
+                <button class="filter-chip" data-filter="error">Critical</button>
+            </div>
+
+            <div class="alerts-layout">
+
+                <!-- Main alerts -->
+                <div class="alerts-stack">
+
+                    <div class="alert-card" data-type="warning">
+                        <div class="alert-icon-wrap warning"><span class="material-symbols-outlined">warning</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">Route Charlie Delayed</h4><span class="alert-time">5 min ago</span></div>
+                            <p class="alert-text">Traffic congestion near Main Gate. Expected delay of 12 minutes on Route Charlie (PRP → Annex). Passengers advised to check alternate routes.</p>
+                            <div class="alert-tags"><span class="alert-tag">Route γ</span><span class="alert-tag">Delay</span><span class="alert-tag">12 min</span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert-card" data-type="success">
+                        <div class="alert-icon-wrap success"><span class="material-symbols-outlined">check_circle</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">Fleet Status: Optimal</h4><span class="alert-time">12 min ago</span></div>
+                            <p class="alert-text">92% of vehicles are currently on schedule. All 4 buses are active across campus routes with no critical issues reported.</p>
+                            <div class="alert-tags"><span class="alert-tag">Fleet</span><span class="alert-tag">All Routes</span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert-card" data-type="info">
+                        <div class="alert-icon-wrap info"><span class="material-symbols-outlined">info</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">New Night Route Added</h4><span class="alert-time">1 hr ago</span></div>
+                            <p class="alert-text">Extended service from Library to Admin Block starting 9 PM. Runs every 20 min until midnight on weeknights.</p>
+                            <div class="alert-tags"><span class="alert-tag">New Route</span><span class="alert-tag">Night Service</span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert-card" data-type="info">
+                        <div class="alert-icon-wrap info"><span class="material-symbols-outlined">campaign</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">Weekend Schedule Change</h4><span class="alert-time">3 hr ago</span></div>
+                            <p class="alert-text">Reduced frequency on all routes during weekends. Buses will run every 30 minutes instead of 15 minutes on Saturday and Sunday.</p>
+                            <div class="alert-tags"><span class="alert-tag">Schedule</span><span class="alert-tag">Weekend</span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert-card" data-type="error">
+                        <div class="alert-icon-wrap error"><span class="material-symbols-outlined">error</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">VIT-BUS-03 Out of Service</h4><span class="alert-time">4 hr ago</span></div>
+                            <p class="alert-text">VIT-BUS-03 has been temporarily pulled from service for scheduled maintenance. A replacement bus has been deployed on Route Alpha.</p>
+                            <div class="alert-tags"><span class="alert-tag">Maintenance</span><span class="alert-tag">Route α</span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert-card" data-type="success">
+                        <div class="alert-icon-wrap success"><span class="material-symbols-outlined">verified</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">Route Alpha — Record Punctuality</h4><span class="alert-time">6 hr ago</span></div>
+                            <p class="alert-text">Route Alpha achieved 98% on-time performance this week — the best record this semester. Driver Rajesh Kumar recognised for excellence.</p>
+                            <div class="alert-tags"><span class="alert-tag">Route α</span><span class="alert-tag">Performance</span></div>
+                        </div>
+                    </div>
+
+                    <div class="alert-card" data-type="warning">
+                        <div class="alert-icon-wrap warning"><span class="material-symbols-outlined">construction</span></div>
+                        <div class="alert-content">
+                            <div class="alert-header"><h4 class="alert-title">Road Work Near Admin Block</h4><span class="alert-time">Yesterday</span></div>
+                            <p class="alert-text">Minor road work near Admin Block may cause 2–3 minute delays on Route Delta until Friday evening.</p>
+                            <div class="alert-tags"><span class="alert-tag">Route δ</span><span class="alert-tag">Construction</span></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Sidebar -->
+                <div class="alerts-sidebar">
+
+                    <div class="alerts-sidebar-card">
+                        <div class="asb-title"><span class="material-symbols-outlined">notifications</span>Get Notified</div>
+                        <p style="font-size:0.8rem;color:var(--text-3);margin-bottom:0.75rem;line-height:1.55">Receive instant delay and service updates directly on your device.</p>
+                        <button class="notify-btn"><span class="material-symbols-outlined">add_alert</span>Enable Notifications</button>
+                    </div>
+
+                    <div class="alerts-sidebar-card">
+                        <div class="asb-title"><span class="material-symbols-outlined">bar_chart</span>Today's Summary</div>
+                        <div class="stat-row"><span class="stat-row-label">Total Alerts</span><span class="stat-row-val">7</span></div>
+                        <div class="stat-row"><span class="stat-row-label">Delays</span><span class="stat-row-val orange">2</span></div>
+                        <div class="stat-row"><span class="stat-row-label">Critical</span><span class="stat-row-val red">1</span></div>
+                        <div class="stat-row"><span class="stat-row-label">Resolved</span><span class="stat-row-val green">4</span></div>
+                    </div>
+
+                    <div class="alerts-sidebar-card">
+                        <div class="asb-title"><span class="material-symbols-outlined">phone_in_talk</span>Emergency</div>
+                        <p style="font-size:0.78rem;color:var(--text-3);margin-bottom:0.65rem">VIT Campus Transport Emergency Line</p>
+                        <a href="tel:0416-220-2020" style="display:flex;align-items:center;gap:0.5rem;font-weight:700;font-size:1rem;color:var(--red);text-decoration:none">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem">call</span>0416-220-2020
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script>
+        document.querySelectorAll('.filter-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const f = chip.dataset.filter;
+                document.querySelectorAll('.alert-card').forEach(card => {
+                    card.style.display = (f === 'all' || card.dataset.type === f) ? 'flex' : 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

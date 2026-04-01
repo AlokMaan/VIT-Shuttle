@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | VIT Shuttle — Fleet Overview</title>
+    <meta name="description" content="Real-time fleet dashboard for VIT Vellore campus shuttle service.">
+    <script>
+        // Apply theme BEFORE paint to avoid flash
+        (function() {
+            var t = localStorage.getItem('vit-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dash-page { padding: 2rem 0 4rem; }
+        .page-hero {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 2.25rem 0;
+        }
+        .page-hero-inner { max-width: 1380px; margin: 0 auto; padding: 0 1.5rem; }
+        .page-hero h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; color: var(--text); letter-spacing: -0.03em; margin: 0.4rem 0 0.5rem; }
+        .page-hero p  { font-size: 0.9rem; color: var(--text-2); }
+
+        /* Stats row */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card {
+            padding: 1.4rem; border-radius: var(--radius-lg);
+            background: var(--surface); border: 1px solid var(--border);
+            box-shadow: var(--shadow); display: flex; flex-direction: column;
+            transition: var(--transition);
+        }
+        .stat-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+        .stat-icon-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+        .stat-icon {
+            width: 44px; height: 44px; border-radius: var(--radius);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .stat-icon .material-symbols-outlined { font-size: 1.3rem; }
+        .stat-icon.blue   { background: var(--primary-bg); color: var(--primary); }
+        .stat-icon.green  { background: var(--green-bg);   color: var(--green); }
+        .stat-icon.orange { background: var(--orange-bg);  color: var(--orange); }
+        .stat-icon.purple { background: var(--purple-bg);  color: var(--purple); }
+        .stat-trend { font-size: 0.7rem; font-weight: 600; padding: 0.12rem 0.45rem; border-radius: 4px; }
+        .stat-trend.up   { color: var(--green);  background: var(--green-bg); }
+        .stat-trend.down { color: var(--orange); background: var(--orange-bg); }
+        .stat-value { font-size: 2rem; font-weight: 800; color: var(--text); line-height: 1; }
+        .stat-label { font-size: 0.72rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.3rem; }
+
+        /* Dashboard grid */
+        .dash-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.25rem; }
+
+        /* Fleet panel */
+        .fleet-panel {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+        .panel-title {
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.9rem; font-weight: 700; color: var(--text);
+            margin-bottom: 1.1rem; padding-bottom: 0.85rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .panel-title .material-symbols-outlined { font-size: 1.1rem; color: var(--primary); }
+
+        .fleet-list { display: flex; flex-direction: column; gap: 0.6rem; }
+        .fleet-item {
+            padding: 0.9rem 1rem; border-radius: var(--radius);
+            background: var(--surface-2); border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        .fleet-item:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+        .fleet-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.65rem; }
+        .fleet-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .fleet-dot.on   { background: var(--green); animation: pulse 1.5s ease-in-out infinite; }
+        .fleet-dot.idle { background: var(--text-4); }
+        .fleet-id   { font-weight: 700; font-size: 0.88rem; color: var(--text); }
+        .fleet-tag {
+            margin-left: auto; font-size: 0.68rem; font-weight: 600;
+            padding: 0.12rem 0.6rem; border-radius: var(--radius-full);
+            background: var(--primary-bg); color: var(--primary);
+            border: 1px solid var(--primary-muted);
+        }
+        .fleet-metrics { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        .fleet-metric { display: flex; align-items: center; gap: 0.28rem; font-size: 0.76rem; color: var(--text-3); }
+        .fleet-metric.hi { color: var(--primary); font-weight: 600; }
+        .fleet-metric .material-symbols-outlined { font-size: 0.9rem; }
+        .occ-wrap { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; font-size: 0.74rem; color: var(--text-3); }
+        .occ-bar { width: 64px; height: 5px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+        .occ-fill { height: 100%; border-radius: 3px; }
+        .occ-fill.low  { background: var(--green); }
+        .occ-fill.mid  { background: var(--primary); }
+        .occ-fill.high { background: var(--orange); }
+
+        /* Side cards */
+        .side-col { display: flex; flex-direction: column; gap: 1.1rem; }
+        .side-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+        .perf-list { display: flex; flex-direction: column; gap: 0.7rem; }
+        .perf-row { display: flex; align-items: center; gap: 0.75rem; }
+        .perf-name   { font-size: 0.78rem; font-weight: 600; color: var(--text-2); width: 80px; flex-shrink: 0; }
+        .perf-bar    { flex: 1; height: 6px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+        .perf-fill   { height: 100%; border-radius: 3px; }
+        .perf-fill.alpha   { background: #2196f3; }
+        .perf-fill.bravo   { background: #1a9a4e; }
+        .perf-fill.charlie { background: var(--purple); }
+        .perf-fill.delta   { background: var(--orange); }
+        .perf-pct { font-size: 0.75rem; font-weight: 700; color: var(--text); width: 32px; text-align: right; }
+
+        .mood-item { display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .mood-item:last-child { border-bottom: none; }
+        .mood-label { color: var(--text-3); }
+        .mood-val   { font-weight: 600; color: var(--text); }
+        .mood-val.green  { color: var(--green); }
+        .mood-val.orange { color: var(--orange); }
+
+        .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+        .quick-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 0.35rem; padding: 0.85rem 0.5rem; border-radius: var(--radius);
+            background: var(--surface-2); border: 1px solid var(--border);
+            color: var(--text-2); font-size: 0.78rem; font-weight: 600;
+            transition: var(--transition); text-align: center;
+        }
+        .quick-btn:hover { background: var(--primary-bg); color: var(--primary); border-color: var(--primary-light); transform: translateY(-2px); box-shadow: var(--shadow); }
+        .quick-btn .material-symbols-outlined { font-size: 1.3rem; }
+
+        @media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px)  { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 480px)  { .stats-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="nav" id="main-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <div class="brand-icon-wrap"><span class="material-symbols-outlined">directions_bus</span></div>
+                <div class="brand-text-group"><span class="brand-text">VIT Shuttle</span><span class="brand-sub">Campus Transit · Vellore</span></div>
+                <span class="brand-badge">LIVE</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="index.html"    class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link active">Dashboard</a>
+                <a href="map.html"       class="nav-link">Live Map</a>
+                <a href="schedules.html" class="nav-link">Schedules</a>
+                <a href="alerts.html"    class="nav-link">Alerts</a>
+            </div>
+            <div class="nav-actions">
+                <div class="ist-clock"><span class="clock-label">IST</span><span class="clock-time" id="clock-time">--:--:--</span></div>
+                <button class="nav-signin" id="nav-signin-btn"><span class="material-symbols-outlined">account_circle</span> Sign In</button>
+                <a href="map.html" class="nav-cta"><span class="material-symbols-outlined">my_location</span> Track Live</a>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Toggle dark / light mode">
+                    <span class="material-symbols-outlined icon-sun">light_mode</span>
+                    <span class="material-symbols-outlined icon-moon">dark_mode</span>
+                </button>
+                <button class="nav-hamburger" id="nav-hamburger"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </nav>
+
+    <div style="padding-top:60px">
+        <div class="page-hero">
+            <div class="page-hero-inner">
+                <div class="section-tag"><span class="material-symbols-outlined">dashboard</span> Fleet Overview</div>
+                <h1>VIT Campus <span class="gradient-text">Fleet Dashboard</span></h1>
+                <p>Real-time overview of all active shuttles and campus transit performance</p>
+            </div>
+        </div>
+
+        <div class="section-content dash-page">
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon-row">
+                        <div class="stat-icon blue"><span class="material-symbols-outlined">directions_bus</span></div>
+                        <span class="stat-trend up">Active</span>
+                    </div>
+                    <div class="stat-value" id="sc-buses">4</div>
+                    <div class="stat-label">Buses Running</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-row">
+                        <div class="stat-icon green"><span class="material-symbols-outlined">group</span></div>
+                        <span class="stat-trend up">+12%</span>
+                    </div>
+                    <div class="stat-value" id="sc-pass">1,840</div>
+                    <div class="stat-label">Passengers Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-row">
+                        <div class="stat-icon purple"><span class="material-symbols-outlined">verified</span></div>
+                        <span class="stat-trend up">+3%</span>
+                    </div>
+                    <div class="stat-value">92%</div>
+                    <div class="stat-label">On Schedule</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon-row">
+                        <div class="stat-icon orange"><span class="material-symbols-outlined">timer</span></div>
+                        <span class="stat-trend down">−2 min</span>
+                    </div>
+                    <div class="stat-value">8 min</div>
+                    <div class="stat-label">Avg Wait Time</div>
+                </div>
+            </div>
+
+            <!-- Dashboard grid -->
+            <div class="dash-grid">
+
+                <!-- Fleet list -->
+                <div class="fleet-panel">
+                    <div class="panel-title">
+                        <span class="material-symbols-outlined">shutter_speed</span>
+                        Live Fleet Status
+                        <span class="live-chip" style="margin-left:auto"><span class="live-dot"></span>Live</span>
+                    </div>
+                    <div class="fleet-list">
+
+                        <div class="fleet-item">
+                            <div class="fleet-header">
+                                <div class="fleet-dot on"></div>
+                                <span class="fleet-id">VIT-BUS-01</span>
+                                <span class="fleet-tag">α Alpha</span>
+                            </div>
+                            <div class="fleet-metrics">
+                                <span class="fleet-metric"><span class="material-symbols-outlined">speed</span>22 km/h</span>
+                                <span class="fleet-metric hi"><span class="material-symbols-outlined">schedule</span>ETA 4 min</span>
+                                <div class="occ-wrap"><div class="occ-bar"><div class="occ-fill mid" style="width:65%"></div></div><span>65%</span></div>
+                            </div>
+                        </div>
+
+                        <div class="fleet-item">
+                            <div class="fleet-header">
+                                <div class="fleet-dot on"></div>
+                                <span class="fleet-id">VIT-BUS-07</span>
+                                <span class="fleet-tag" style="background:var(--green-bg);color:var(--green);border-color:rgba(52,212,116,.2)">β Bravo</span>
+                            </div>
+                            <div class="fleet-metrics">
+                                <span class="fleet-metric"><span class="material-symbols-outlined">speed</span>18 km/h</span>
+                                <span class="fleet-metric hi"><span class="material-symbols-outlined">schedule</span>ETA 7 min</span>
+                                <div class="occ-wrap"><div class="occ-bar"><div class="occ-fill high" style="width:80%"></div></div><span>80%</span></div>
+                            </div>
+                        </div>
+
+                        <div class="fleet-item">
+                            <div class="fleet-header">
+                                <div class="fleet-dot on"></div>
+                                <span class="fleet-id">VIT-BUS-12</span>
+                                <span class="fleet-tag" style="background:var(--purple-bg);color:var(--purple);border-color:rgba(167,139,250,.2)">γ Charlie</span>
+                            </div>
+                            <div class="fleet-metrics">
+                                <span class="fleet-metric"><span class="material-symbols-outlined">speed</span>15 km/h</span>
+                                <span class="fleet-metric hi"><span class="material-symbols-outlined">schedule</span>ETA 11 min</span>
+                                <div class="occ-wrap"><div class="occ-bar"><div class="occ-fill low" style="width:45%"></div></div><span>45%</span></div>
+                            </div>
+                        </div>
+
+                        <div class="fleet-item">
+                            <div class="fleet-header">
+                                <div class="fleet-dot idle"></div>
+                                <span class="fleet-id">VIT-BUS-04</span>
+                                <span class="fleet-tag" style="background:var(--orange-bg);color:var(--orange);border-color:rgba(245,158,11,.2)">δ Delta</span>
+                            </div>
+                            <div class="fleet-metrics">
+                                <span class="fleet-metric"><span class="material-symbols-outlined">speed</span>0 km/h</span>
+                                <span class="fleet-metric"><span class="material-symbols-outlined">schedule</span>At stop</span>
+                                <div class="occ-wrap"><div class="occ-bar"><div class="occ-fill low" style="width:20%"></div></div><span>20%</span></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Side column -->
+                <div class="side-col">
+
+                    <!-- Route performance -->
+                    <div class="side-card">
+                        <div class="panel-title"><span class="material-symbols-outlined">analytics</span>Route Performance</div>
+                        <div class="perf-list">
+                            <div class="perf-row"><span class="perf-name">Alpha</span><div class="perf-bar"><div class="perf-fill alpha" style="width:95%"></div></div><span class="perf-pct">95%</span></div>
+                            <div class="perf-row"><span class="perf-name">Bravo</span><div class="perf-bar"><div class="perf-fill bravo" style="width:88%"></div></div><span class="perf-pct">88%</span></div>
+                            <div class="perf-row"><span class="perf-name">Charlie</span><div class="perf-bar"><div class="perf-fill charlie" style="width:72%"></div></div><span class="perf-pct">72%</span></div>
+                            <div class="perf-row"><span class="perf-name">Delta</span><div class="perf-bar"><div class="perf-fill delta" style="width:91%"></div></div><span class="perf-pct">91%</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Campus info -->
+                    <div class="side-card">
+                        <div class="panel-title"><span class="material-symbols-outlined">wb_sunny</span>Campus Info</div>
+                        <div class="mood-item"><span class="mood-label">Weather</span><span class="mood-val">28°C · Clear</span></div>
+                        <div class="mood-item"><span class="mood-label">Footfall</span><span class="mood-val orange">Moderate–High</span></div>
+                        <div class="mood-item"><span class="mood-label">Peak Hours</span><span class="mood-val">8–9 AM, 4–5 PM</span></div>
+                        <div class="mood-item"><span class="mood-label">Demand</span><span class="mood-val green">Above Average</span></div>
+                    </div>
+
+                    <!-- Quick actions -->
+                    <div class="side-card">
+                        <div class="panel-title"><span class="material-symbols-outlined">bolt</span>Quick Actions</div>
+                        <div class="quick-grid">
+                            <a href="map.html"       class="quick-btn"><span class="material-symbols-outlined">explore</span>Live Map</a>
+                            <a href="alerts.html"    class="quick-btn"><span class="material-symbols-outlined">notifications</span>Alerts</a>
+                            <a href="schedules.html" class="quick-btn"><span class="material-symbols-outlined">event_note</span>Schedules</a>
+                            <a href="index.html"     class="quick-btn"><span class="material-symbols-outlined">home</span>Home</a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+</body>
+</html>

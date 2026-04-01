@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedules | VIT Shuttle — Route Timetables</title>
+    <meta name="description" content="Full shuttle timetables and route information for VIT Vellore campus.">
+    <script>
+        (function() {
+            var t = localStorage.getItem('vit-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: 2.25rem 0; }
+        .page-hero-inner { max-width: 1380px; margin: 0 auto; padding: 0 1.5rem; }
+        .page-hero h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; color: var(--text); letter-spacing: -0.03em; margin: 0.4rem 0 0.5rem; }
+        .page-hero p  { font-size: 0.9rem; color: var(--text-2); }
+
+        .sched-layout { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; align-items: start; }
+
+        /* Route cards */
+        .route-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .route-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden;
+            box-shadow: var(--shadow); transition: var(--transition);
+        }
+        .route-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+        .route-color-bar { height: 4px; }
+        .route-body { padding: 1.25rem; }
+        .route-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.85rem; }
+        .route-name { font-weight: 700; font-size: 1rem; color: var(--text); }
+        .route-status { display: flex; align-items: center; gap: 0.28rem; font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.55rem; border-radius: var(--radius-full); }
+        .route-status.on  { background: var(--green-bg);  color: var(--green); }
+        .route-status.del { background: var(--orange-bg); color: var(--orange); }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: pulse 1.5s ease-in-out infinite; }
+        .route-path {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.6rem 0.85rem; border-radius: var(--radius-sm);
+            background: var(--surface-2); border: 1px solid var(--border);
+            margin-bottom: 0.85rem; font-size: 0.83rem;
+        }
+        .route-from, .route-to { font-weight: 600; color: var(--text); }
+        .route-arrow { color: var(--text-3); }
+        .route-arrow .material-symbols-outlined { font-size: 0.9rem; }
+        .schedule-meta { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.85rem; }
+        .sched-row { display: flex; justify-content: space-between; padding: 0.3rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .sched-row:last-child { border-bottom: none; }
+        .sched-label { color: var(--text-3); }
+        .sched-val   { font-weight: 600; color: var(--text); }
+        .sched-val.hi { color: var(--primary); }
+        .next-bus {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.55rem 0.75rem; border-radius: var(--radius-sm);
+            background: var(--green-bg); border: 1px solid rgba(52,212,116,0.2);
+            font-size: 0.82rem; color: var(--green); font-weight: 500;
+        }
+        .next-bus.delayed { background: var(--orange-bg); border-color: rgba(245,158,11,0.2); color: var(--orange); }
+        .next-bus .material-symbols-outlined { font-size: 0.95rem; }
+        .next-bus strong { font-weight: 700; }
+
+        /* Timetable */
+        .timetable-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow);
+        }
+        .timetable-header {
+            padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 0.5rem;
+            font-size: 0.88rem; font-weight: 700; color: var(--text);
+        }
+        .timetable-header .material-symbols-outlined { font-size: 1rem; color: var(--primary); }
+        .timetable { width: 100%; border-collapse: collapse; font-size: 0.8rem; overflow-x: auto; display: block; }
+        .timetable th {
+            font-weight: 700; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--text-3); text-align: left; padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border); background: var(--surface-2);
+            white-space: nowrap;
+        }
+        .timetable td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-2); white-space: nowrap; }
+        .timetable tr:last-child td { border-bottom: none; }
+        .timetable tr:hover td { background: var(--primary-bg); }
+        .ttime { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+        .rtag { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.5rem; border-radius: 4px; white-space: nowrap; }
+        .rtag.a { background: var(--primary-bg); color: var(--primary); }
+        .rtag.b { background: var(--green-bg);   color: var(--green); }
+        .rtag.c { background: var(--purple-bg);  color: var(--purple); }
+        .rtag.d { background: var(--orange-bg);  color: var(--orange); }
+        .on-time { color: var(--green); font-weight: 600; }
+        .delayed  { color: var(--orange); font-weight: 600; }
+
+        /* Sidebar */
+        .sched-sidebar { display: flex; flex-direction: column; gap: 1rem; }
+        .info-card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow);
+        }
+        .info-title { font-size: 0.82rem; font-weight: 700; color: var(--text); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+        .info-title .material-symbols-outlined { font-size: 1rem; color: var(--primary); }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 0.42rem 0; border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .info-row:last-child { border-bottom: none; }
+        .info-label { color: var(--text-3); }
+        .info-val   { font-weight: 600; color: var(--text); }
+        .route-legend { display: flex; flex-direction: column; gap: 0.55rem; margin-top: 0.25rem; }
+        .legend-row { display: flex; align-items: center; gap: 0.65rem; font-size: 0.8rem; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .legend-name { font-weight: 600; color: var(--text); }
+        .legend-stops { color: var(--text-3); margin-left: auto; font-size: 0.72rem; }
+
+        @media (max-width: 1000px) { .sched-layout { grid-template-columns: 1fr; } .sched-sidebar { display: grid; grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px)  { .route-grid { grid-template-columns: 1fr; } .sched-sidebar { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <nav class="nav" id="main-nav">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-brand">
+                <div class="brand-icon-wrap"><span class="material-symbols-outlined">directions_bus</span></div>
+                <div class="brand-text-group"><span class="brand-text">VIT Shuttle</span><span class="brand-sub">Campus Transit · Vellore</span></div>
+                <span class="brand-badge">LIVE</span>
+            </a>
+            <div class="nav-links" id="nav-links">
+                <a href="index.html"    class="nav-link">Home</a>
+                <a href="dashboard.html" class="nav-link">Dashboard</a>
+                <a href="map.html"       class="nav-link">Live Map</a>
+                <a href="schedules.html" class="nav-link active">Schedules</a>
+                <a href="alerts.html"    class="nav-link">Alerts</a>
+            </div>
+            <div class="nav-actions">
+                <div class="ist-clock"><span class="clock-label">IST</span><span class="clock-time" id="clock-time">--:--:--</span></div>
+                <button class="nav-signin" id="nav-signin-btn"><span class="material-symbols-outlined">account_circle</span> Sign In</button>
+                <a href="map.html" class="nav-cta"><span class="material-symbols-outlined">my_location</span> Track Live</a>
+                <button class="theme-toggle" id="theme-toggle-btn" title="Toggle dark / light mode">
+                    <span class="material-symbols-outlined icon-sun">light_mode</span>
+                    <span class="material-symbols-outlined icon-moon">dark_mode</span>
+                </button>
+                <button class="nav-hamburger" id="nav-hamburger"><span></span><span></span><span></span></button>
+            </div>
+        </div>
+    </nav>
+
+    <div style="padding-top:60px">
+        <div class="page-hero">
+            <div class="page-hero-inner">
+                <div class="section-tag"><span class="material-symbols-outlined">event_note</span> Timetables</div>
+                <h1>Schedules &amp; <span class="gradient-text">Route Info</span></h1>
+                <p>Complete shuttle timetables with real-time status for all VIT Vellore campus routes</p>
+            </div>
+        </div>
+
+        <div class="section-content" style="padding-top:2rem;padding-bottom:4rem">
+            <div class="sched-layout">
+
+                <!-- Main content -->
+                <div>
+                    <!-- Route cards -->
+                    <div class="route-grid">
+
+                        <div class="route-card">
+                            <div class="route-color-bar" style="background:#2196f3"></div>
+                            <div class="route-body">
+                                <div class="route-header">
+                                    <span class="route-name">α Route Alpha</span>
+                                    <span class="route-status on"><span class="status-dot"></span>Active</span>
+                                </div>
+                                <div class="route-path">
+                                    <span class="route-from">Main Gate</span>
+                                    <span class="route-arrow"><span class="material-symbols-outlined">arrow_forward</span></span>
+                                    <span class="route-to">SJT → TT Complex</span>
+                                </div>
+                                <div class="schedule-meta">
+                                    <div class="sched-row"><span class="sched-label">First Bus</span><span class="sched-val">7:00 AM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Last Bus</span><span class="sched-val">9:00 PM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Frequency</span><span class="sched-val hi">Every 10 min</span></div>
+                                    <div class="sched-row"><span class="sched-label">Stops</span><span class="sched-val">5 stops</span></div>
+                                </div>
+                                <div class="next-bus"><span class="material-symbols-outlined">directions_bus</span>Next bus in <strong>&nbsp;4 min</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="route-card">
+                            <div class="route-color-bar" style="background:#1a9a4e"></div>
+                            <div class="route-body">
+                                <div class="route-header">
+                                    <span class="route-name">β Route Bravo</span>
+                                    <span class="route-status on"><span class="status-dot"></span>Active</span>
+                                </div>
+                                <div class="route-path">
+                                    <span class="route-from">Men's Hostel</span>
+                                    <span class="route-arrow"><span class="material-symbols-outlined">arrow_forward</span></span>
+                                    <span class="route-to">Library → Ladies Hostel</span>
+                                </div>
+                                <div class="schedule-meta">
+                                    <div class="sched-row"><span class="sched-label">First Bus</span><span class="sched-val">7:30 AM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Last Bus</span><span class="sched-val">8:30 PM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Frequency</span><span class="sched-val hi">Every 15 min</span></div>
+                                    <div class="sched-row"><span class="sched-label">Stops</span><span class="sched-val">4 stops</span></div>
+                                </div>
+                                <div class="next-bus"><span class="material-symbols-outlined">directions_bus</span>Next bus in <strong>&nbsp;7 min</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="route-card">
+                            <div class="route-color-bar" style="background:#6a4fcf"></div>
+                            <div class="route-body">
+                                <div class="route-header">
+                                    <span class="route-name">γ Route Charlie</span>
+                                    <span class="route-status del"><span class="status-dot"></span>Delayed</span>
+                                </div>
+                                <div class="route-path">
+                                    <span class="route-from">PRP Block</span>
+                                    <span class="route-arrow"><span class="material-symbols-outlined">arrow_forward</span></span>
+                                    <span class="route-to">Foodys → Annex</span>
+                                </div>
+                                <div class="schedule-meta">
+                                    <div class="sched-row"><span class="sched-label">First Bus</span><span class="sched-val">8:00 AM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Last Bus</span><span class="sched-val">7:00 PM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Frequency</span><span class="sched-val hi">Every 12 min</span></div>
+                                    <div class="sched-row"><span class="sched-label">Stops</span><span class="sched-val">6 stops</span></div>
+                                </div>
+                                <div class="next-bus delayed"><span class="material-symbols-outlined">warning</span>Delayed by <strong>&nbsp;12 min</strong></div>
+                            </div>
+                        </div>
+
+                        <div class="route-card">
+                            <div class="route-color-bar" style="background:#e07b00"></div>
+                            <div class="route-body">
+                                <div class="route-header">
+                                    <span class="route-name">δ Route Delta</span>
+                                    <span class="route-status on"><span class="status-dot"></span>Active</span>
+                                </div>
+                                <div class="route-path">
+                                    <span class="route-from">Outdoor Stadium</span>
+                                    <span class="route-arrow"><span class="material-symbols-outlined">arrow_forward</span></span>
+                                    <span class="route-to">Indoor → Admin Block</span>
+                                </div>
+                                <div class="schedule-meta">
+                                    <div class="sched-row"><span class="sched-label">First Bus</span><span class="sched-val">7:15 AM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Last Bus</span><span class="sched-val">9:30 PM</span></div>
+                                    <div class="sched-row"><span class="sched-label">Frequency</span><span class="sched-val hi">Every 8 min</span></div>
+                                    <div class="sched-row"><span class="sched-label">Stops</span><span class="sched-val">3 stops</span></div>
+                                </div>
+                                <div class="next-bus"><span class="material-symbols-outlined">directions_bus</span>Next bus in <strong>&nbsp;2 min</strong></div>
+                            </div>
+                        </div>
+
+                    </div><!-- /route-grid -->
+
+                    <!-- Detailed timetable -->
+                    <div class="timetable-card">
+                        <div class="timetable-header">
+                            <span class="material-symbols-outlined">table_chart</span>
+                            Detailed Timetable — Morning Slots
+                        </div>
+                        <div style="overflow-x:auto">
+                            <table class="timetable">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th><th>Route</th><th>From</th><th>To</th><th>Bus ID</th><th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td class="ttime">07:00 AM</td><td><span class="rtag a">Alpha</span></td><td>Main Gate</td><td>TT Complex</td><td>VIT-BUS-01</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">07:10 AM</td><td><span class="rtag a">Alpha</span></td><td>Main Gate</td><td>TT Complex</td><td>VIT-BUS-09</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">07:15 AM</td><td><span class="rtag d">Delta</span></td><td>Outdoor Stadium</td><td>Admin Block</td><td>VIT-BUS-04</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">07:30 AM</td><td><span class="rtag b">Bravo</span></td><td>Men's Hostel</td><td>Ladies Hostel</td><td>VIT-BUS-07</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">07:45 AM</td><td><span class="rtag b">Bravo</span></td><td>Men's Hostel</td><td>Ladies Hostel</td><td>VIT-BUS-15</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">08:00 AM</td><td><span class="rtag c">Charlie</span></td><td>PRP Block</td><td>Annex Block</td><td>VIT-BUS-12</td><td class="delayed">+12 min</td></tr>
+                                    <tr><td class="ttime">08:10 AM</td><td><span class="rtag a">Alpha</span></td><td>Main Gate</td><td>TT Complex</td><td>VIT-BUS-01</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">08:15 AM</td><td><span class="rtag d">Delta</span></td><td>Outdoor Stadium</td><td>Admin Block</td><td>VIT-BUS-04</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">08:20 AM</td><td><span class="rtag a">Alpha</span></td><td>TT Complex</td><td>Main Gate</td><td>VIT-BUS-09</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">08:30 AM</td><td><span class="rtag b">Bravo</span></td><td>Men's Hostel</td><td>Ladies Hostel</td><td>VIT-BUS-07</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">08:35 AM</td><td><span class="rtag a">Alpha</span></td><td>TT Complex</td><td>Main Gate</td><td>VIT-BUS-01</td><td class="on-time">On Time</td></tr>
+                                    <tr><td class="ttime">09:00 AM</td><td><span class="rtag c">Charlie</span></td><td>PRP Block</td><td>Annex Block</td><td>VIT-BUS-12</td><td class="on-time">On Time</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="sched-sidebar">
+
+                    <div class="info-card">
+                        <div class="info-title"><span class="material-symbols-outlined">info</span>Service Hours</div>
+                        <div class="info-row"><span class="info-label">Weekday Start</span><span class="info-val">7:00 AM</span></div>
+                        <div class="info-row"><span class="info-label">Weekday End</span><span class="info-val">9:30 PM</span></div>
+                        <div class="info-row"><span class="info-label">Weekend Start</span><span class="info-val">8:00 AM</span></div>
+                        <div class="info-row"><span class="info-label">Weekend End</span><span class="info-val">7:00 PM</span></div>
+                        <div class="info-row"><span class="info-label">Freq (peak)</span><span class="info-val" style="color:var(--primary)">Every 8 min</span></div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-title"><span class="material-symbols-outlined">route</span>Route Legend</div>
+                        <div class="route-legend">
+                            <div class="legend-row"><div class="legend-dot" style="background:#2196f3"></div><span class="legend-name">α Alpha</span><span class="legend-stops">5 stops</span></div>
+                            <div class="legend-row"><div class="legend-dot" style="background:#1a9a4e"></div><span class="legend-name">β Bravo</span><span class="legend-stops">4 stops</span></div>
+                            <div class="legend-row"><div class="legend-dot" style="background:#6a4fcf"></div><span class="legend-name">γ Charlie</span><span class="legend-stops">6 stops</span></div>
+                            <div class="legend-row"><div class="legend-dot" style="background:#e07b00"></div><span class="legend-name">δ Delta</span><span class="legend-stops">3 stops</span></div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-title"><span class="material-symbols-outlined">emergency_share</span>Emergency</div>
+                        <p style="font-size:0.78rem;color:var(--text-3);margin-bottom:0.65rem">Campus Transport Emergency Line</p>
+                        <a href="tel:0416-220-2020" style="display:flex;align-items:center;gap:0.5rem;font-weight:700;font-size:1rem;color:var(--red)">
+                            <span class="material-symbols-outlined" style="font-size:1.1rem">call</span>0416-220-2020
+                        </a>
+                    </div>
+
+                    <a href="map.html" class="btn-primary" style="width:100%;justify-content:center;text-decoration:none">
+                        <span class="material-symbols-outlined">explore</span>View Live Map
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared.js"></script>
+</body>
+</html>
