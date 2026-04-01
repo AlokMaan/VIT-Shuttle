@@ -201,6 +201,8 @@
                 tab.classList.add('active');
                 currentTab = tab.dataset.tab;
                 errorBox.style.display = 'none';
+                emailInput.value = '';
+                pwInput.value = '';
 
                 if (currentTab === 'admin') {
                     title.textContent = 'Admin Sign In';
@@ -208,7 +210,7 @@
                     emailInput.placeholder = 'admin@vit.ac.in';
                 } else {
                     title.textContent = 'Student Sign In';
-                    desc.textContent = 'Sign in with your VIT credentials to access bus tracking and schedules.';
+                    desc.textContent = 'Sign in with your VIT student email to access bus tracking and schedules.';
                     emailInput.placeholder = 'yourname@vitstudent.ac.in';
                 }
             });
@@ -221,46 +223,101 @@
             pwToggle.querySelector('.material-symbols-outlined').textContent = isPassword ? 'visibility_off' : 'visibility';
         });
 
+        // Show error helper
+        function showError(msg) {
+            errorBox.style.display = 'flex';
+            errorText.textContent = msg;
+            errorBox.classList.add('shake');
+            setTimeout(() => errorBox.classList.remove('shake'), 500);
+        }
+
         // Form submit
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const email = emailInput.value.trim();
+            const email = emailInput.value.trim().toLowerCase();
             const password = pwInput.value.trim();
 
             if (!email || !password) {
-                errorBox.style.display = 'flex';
-                errorText.textContent = 'Please fill in all fields.';
+                showError('Please fill in all fields.');
                 return;
             }
 
-            // Validate email domain
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showError('Please enter a valid email address.');
+                return;
+            }
+
+            // Validate email domain based on role
+            if (currentTab === 'student' && !email.endsWith('@vitstudent.ac.in')) {
+                showError('Student access requires a @vitstudent.ac.in email address.');
+                return;
+            }
+
             if (currentTab === 'admin' && !email.endsWith('@vit.ac.in')) {
-                errorBox.style.display = 'flex';
-                errorText.textContent = 'Admin access requires a @vit.ac.in email address.';
+                showError('Admin access requires a @vit.ac.in email address.');
+                return;
+            }
+
+            // Validate password (minimum 6 characters)
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long.');
                 return;
             }
 
             errorBox.style.display = 'none';
 
-            // Simulate sign-in
+            // Simulate sign-in with loading state
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="material-symbols-outlined spinner">progress_activity</span> Signing in...';
+            submitBtn.innerHTML = '<span class="material-symbols-outlined spinner">progress_activity</span> Verifying credentials...';
 
             setTimeout(() => {
+                // Show success
+                submitBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Signed In Successfully!';
+                submitBtn.style.background = '#1e9e52';
+
                 // Store auth state
                 localStorage.setItem('vit-auth', JSON.stringify({
                     email: email,
+                    name: email.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                     role: currentTab,
                     timestamp: Date.now()
                 }));
 
-                if (currentTab === 'admin') {
-                    window.location.href = 'admin.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
+                setTimeout(() => {
+                    if (currentTab === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }, 800);
             }, 1500);
         });
+
+        // Real-time email domain hint
+        emailInput.addEventListener('input', () => {
+            errorBox.style.display = 'none';
+            const val = emailInput.value.trim();
+            const wrap = emailInput.closest('.auth-input-wrap');
+            if (currentTab === 'student' && val.length > 3 && !val.includes('@')) {
+                wrap.setAttribute('data-hint', '@vitstudent.ac.in');
+            } else if (currentTab === 'admin' && val.length > 3 && !val.includes('@')) {
+                wrap.setAttribute('data-hint', '@vit.ac.in');
+            } else {
+                wrap.removeAttribute('data-hint');
+            }
+        });
+
+        // Check if already logged in
+        const auth = JSON.parse(localStorage.getItem('vit-auth') || 'null');
+        if (auth && auth.timestamp && (Date.now() - auth.timestamp < 86400000)) {
+            if (auth.role === 'admin') {
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
     })();
     </script>
 </body>

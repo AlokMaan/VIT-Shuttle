@@ -234,3 +234,22 @@
     .brand-panel-desc { display: none; }
     .signin-form-panel { padding: 2rem 1.5rem; }
 }
+
+/* ─── Shake animation ──────────────────── */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+.auth-error.shake { animation: shake 0.4s ease-in-out; }
+
+/* ─── Domain hints ─────────────────────── */
+.auth-input-wrap[data-hint]::after {
+    content: attr(data-hint);
+    position: absolute;
+    right: 12px; top: 50%; transform: translateY(-50%);
+    font-size: 0.72rem; color: var(--text-4);
+    font-weight: 500; pointer-events: none;
+    opacity: 0.7;
+}
+.auth-input-wrap { position: relative; }
