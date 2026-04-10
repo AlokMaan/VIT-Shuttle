@@ -48,6 +48,7 @@ Open any `.html` file via **VS Code Live Server** (port 5500) or directly in you
 | 🎓 Student Dashboard | `student-portal.html` |
 | 🛠️ Admin Dashboard | `admin-portal.html` |
 
+---
 
 ## 💳 Test Payment
 
