@@ -48,16 +48,6 @@ Open any `.html` file via **VS Code Live Server** (port 5500) or directly in you
 | 🎓 Student Dashboard | `student-portal.html` |
 | 🛠️ Admin Dashboard | `admin-portal.html` |
 
----
-
-## 🔑 Default Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| **Admin** | admin@vit.ac.in | Admin@1234 |
-| **Student** | alok.maan@vitstudent.ac.in | Student@1234 |
-
----
 
 ## 💳 Test Payment
 
