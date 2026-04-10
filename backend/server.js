@@ -23,19 +23,18 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
 // ── CORS ─────────────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    'http://127.0.0.1:5500',
-    'http://localhost:5500',
-    'http://127.0.0.1:3000',
-    'http://localhost:3000',
-    'http://127.0.0.1:3001',
-    'http://localhost:3001',
-    'http://127.0.0.1:5173',
-    'http://localhost:5173',
-    'http://127.0.0.1:8080',
-    'http://localhost:8080',
-    'null'
-  ],
+  origin: function(origin, callback) {
+    // Allow all origins in production (Vercel auto-generates subdomains)
+    if (!origin) return callback(null, true);
+    const allowed = [
+      'http://localhost:5173', 'http://localhost:3000', 'http://localhost:5500',
+      'http://127.0.0.1:5173', 'http://127.0.0.1:3000', 'http://127.0.0.1:5500',
+    ];
+    if (allowed.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all for now
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
