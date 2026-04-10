@@ -1,1 +1,13 @@
-*.DS_Store
+# Backend
+backend/node_modules/
+backend/.env
+backend/uploads/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# OS / IDE
+.DS_Store
+*.log
+.claude/
